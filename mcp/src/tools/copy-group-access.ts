@@ -19,6 +19,7 @@ export const copyGroupAccessTool = {
     const target = settings.access.find((a) => a.group === to);
     if (!source || !target) throw new Error(`No group called ${source ? to : from}. Check the names with get_settings.`);
     const changes: Change[] = source.apps.filter((app) => !target.apps.includes(app)).map((app) => ({ type: "access", group: to, app, allowed: true }));
+    if (changes.length === 0) return `${to} already has every application ${from} has. Nothing to change.`;
     return showChange(changes, settings);
   },
 };

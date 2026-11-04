@@ -60,6 +60,28 @@ test("copy_group_access only shows the change; apply_change applies it", async (
   assert.equal(patches.length, 1);
 });
 
+test("preview_change refuses malformed changes and stores nothing", async () => {
+  const { patches } = fakePlatform();
+  const bad = [
+    { type: "delete-everything" },
+    { ...change, extra: "sneaky" },
+    { ...change, allowed: "false" },
+    { type: "policy", id: "session-length-hours", value: { nested: 1 } },
+    { type: "policy", id: "session-length-hours" },
+    "not an object",
+  ];
+  for (const b of bad) await assert.rejects(previewChangeTool.handler({ changes: [b as never] }), /Nothing was previewed/);
+  await assert.rejects(previewChangeTool.handler({ changes: [] }), /no changes to show/);
+  assert.equal(patches.length, 0);
+});
+
+test("what is applied is exactly what was shown", async () => {
+  const { patches } = fakePlatform();
+  const id = idOf(await previewChangeTool.handler({ changes: [change] }));
+  await applyChangeTool.handler({ id });
+  assert.deepEqual(patches, [change]);
+});
+
 test("a read-only token can't use copy_group_access", async () => {
   const { patches } = fakePlatform("read");
   await assert.rejects(copyGroupAccessTool.handler({ from: "staff", to: "contractors" }), /read-only/);
